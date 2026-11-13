@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 - 2026-11-13
+
+- The module no longer manages the resource provider registrations. In 1.0.0, `apply` failed with "already exists - to be managed via Terraform this resource needs to be imported" when a namespace was already registered. `destroy` unregistered the namespaces in your subscription and could wait a long time on `Microsoft.Compute` "Unregistering".
+- Register the namespaces in your `azurerm` provider block with `resource_providers_to_register = ["Microsoft.Compute", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.Quota"]`. The provider registers only a missing namespace and never unregisters one.
+- Upgrade from 1.0.0: a `removed` block removes the four registrations from the state. They stay registered in your subscription. Nothing is destroyed.
+- Needs Terraform 1.10.0 or later, or OpenTofu 1.10.0 or later (the `removed` block with `lifecycle`).
+
 ## 1.0.0 - 2026-11-08
 
 First release of the Azure connect module.

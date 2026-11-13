@@ -145,9 +145,24 @@ run "names_and_tags" {
     error_message = "no resource may carry the tag multicloud:managed"
   }
 
+}
+
+# 1.0.1: the module manages no resource provider registration. A managed registration failed on a namespace
+# that was already registered and unregistered the namespace on destroy. The provider block of the caller
+# registers the namespaces (resource_providers_to_register); the removed block forgets the 1.0.0 resources.
+run "no_managed_provider_registration" {
+  command = plan
+
   assert {
-    condition     = jsonencode(sort(keys(azurerm_resource_provider_registration.namespace))) == jsonencode(["Microsoft.Compute", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.Quota"])
-    error_message = "the four resource providers must be registered"
+    condition = alltrue([
+      for f in fileset(".", "*.tf") : !can(regex("(?m)^resource\\s+\"azurerm_resource_provider_registration\"", file(f)))
+    ]) && length(var.org_slug) > 0
+    error_message = "no .tf file may declare an azurerm_resource_provider_registration resource"
+  }
+
+  assert {
+    condition     = can(regex("(?s)removed\\s*\\{\\s*from\\s*=\\s*azurerm_resource_provider_registration\\.namespace\\s*lifecycle\\s*\\{\\s*destroy\\s*=\\s*false", file("main.tf"))) && length(var.org_slug) > 0
+    error_message = "main.tf must forget the 1.0.0 registrations with removed { lifecycle { destroy = false } }"
   }
 }
 
@@ -170,7 +185,7 @@ run "no_identity_attached_to_any_vm" {
 run "terraform_has_no_literal_action" {
   command = plan
 
-  # Only the four namespaces of the provider registrations (no slash) may appear as strings.
+  # Namespaces such as "Microsoft.Compute" (no slash) may appear as strings; actions may not.
   assert {
     condition     = alltrue([for f in fileset(".", "*.tf") : !can(regex("\"Microsoft\\.[A-Za-z]+/", file(f)))]) && length(var.org_slug) > 0
     error_message = "no .tf file may hold an action string such as \"Microsoft.X/y/z\""

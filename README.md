@@ -11,7 +11,7 @@ It creates no key and no secret.
   (`SUBSCRIPTION_NOT_DEDICATED`; `mctl cloud-account accept-shared-account <id>`).
 - An identity that runs `apply` and is Owner of the subscription,
   or holds both User Access Administrator and Contributor.
-- Terraform 1.6.0 or later, or OpenTofu 1.6.0 or later.
+- Terraform 1.10.0 or later, or OpenTofu 1.10.0 or later.
 - The `hashicorp/azurerm` provider 5.12.0, configured by you (for example with `az login`).
 - `curl` 7.76.0 or later in the `PATH`.
 - A Linux or macOS shell (`/bin/sh`). Windows needs WSL.
@@ -26,7 +26,6 @@ It creates no key and no secret.
 - The role `MulticloudProvisioner-<8 hex>` in your subscription, assigned to the identity.
   - The actions come from the permission bundle in `policy.customer.json`. The file is generated. Do not edit it.
   - The role cannot attach an identity to a virtual machine.
-- The resource provider registrations `Microsoft.Compute`, `Microsoft.Network`, `Microsoft.Quota` and `Microsoft.ManagedIdentity`.
 - One call to the Multicloud API, after the access exists.
   The call sends `tenant_id`, `client_id`, `uami_resource_id`, `policy_version` and `module_version`.
   The call sends the connect token in an HTTP header.
@@ -42,10 +41,17 @@ It creates no key and no secret.
 `mctl cloud-account create` (or the Multicloud API) returns a ready snippet with every value filled in.
 The snippet looks like the example in `../examples/azure/main.tf`. All values there are placeholders.
 
-Set `resource_provider_registrations = "none"` in your `azurerm` provider block.
-The module registers the four resource providers that it needs.
-UNVERIFIED: if you do not set this value, `apply` may fail for a provider that is already registered.
-If `apply` fails for this reason, import the registration or remove it from the module call, and run `apply` again.
+Your `azurerm` provider block registers the four resource providers that Multicloud needs. Set these two lines:
+
+```hcl
+resource_provider_registrations = "none"
+resource_providers_to_register  = ["Microsoft.Compute", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.Quota"]
+```
+
+- The provider registers a namespace only if it is not registered yet.
+- The provider never unregisters a namespace, also not on `destroy`.
+- The module itself manages no registration.
+- If a registration is missing, the Multicloud connect check reports `provider:<namespace>`.
 
 ## Inputs
 

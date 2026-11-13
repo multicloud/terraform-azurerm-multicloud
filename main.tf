@@ -4,7 +4,7 @@
 # The module creates no key, no secret and no identity on any virtual machine.
 
 locals {
-  module_version = "1.0.0"
+  module_version = "1.0.1"
 
   # policy.customer.json is generated from the Multicloud permission list. Do not edit by hand.
   bundle = jsondecode(file("${path.module}/policy.customer.json"))
@@ -36,11 +36,14 @@ resource "azurerm_user_assigned_identity" "provisioner" {
   tags                = local.tags
 }
 
-# UNVERIFIED: whether the apply fails for a namespace that is already registered. Set
-# resource_provider_registrations = "none" on the azurerm provider (the example does) so the provider
-# does not register them first.
-resource "azurerm_resource_provider_registration" "namespace" {
-  for_each = toset(["Microsoft.Compute", "Microsoft.Network", "Microsoft.Quota", "Microsoft.ManagedIdentity"])
+# 1.0.0 managed the four resource provider registrations as resources. That failed for a namespace that was
+# already registered, and destroy unregistered the namespaces in your subscription. The azurerm provider
+# block now registers them (resource_providers_to_register, see the README). This block makes Terraform
+# forget the old registrations on upgrade: it neither unregisters them nor deletes them.
+removed {
+  from = azurerm_resource_provider_registration.namespace
 
-  name = each.value
+  lifecycle {
+    destroy = false
+  }
 }

@@ -82,7 +82,7 @@ run "post_back_body_has_exactly_five_keys" {
   }
 
   assert {
-    condition     = output.last_body.module_version == "1.0.0" && tostring(output.last_body.policy_version) == "2"
+    condition     = output.last_body.module_version == "1.0.1" && tostring(output.last_body.policy_version) == "2"
     error_message = "the body must carry the module version and the policy version"
   }
 

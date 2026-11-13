@@ -19,6 +19,4 @@ resource "azurerm_role_assignment" "provisioner" {
   role_definition_id = azurerm_role_definition.provisioner.role_definition_resource_id
   principal_id       = azurerm_user_assigned_identity.provisioner.principal_id
   principal_type     = "ServicePrincipal"
-
-  depends_on = [azurerm_resource_provider_registration.namespace]
 }
